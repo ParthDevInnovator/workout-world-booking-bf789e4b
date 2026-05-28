@@ -14,16 +14,227 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          created_at: string
+          duration_type: Database["public"]["Enums"]["duration_type"]
+          end_date: string
+          gym_id: string
+          id: string
+          start_date: string
+          status: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_type: Database["public"]["Enums"]["duration_type"]
+          end_date: string
+          gym_id: string
+          id?: string
+          start_date: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_type?: Database["public"]["Enums"]["duration_type"]
+          end_date?: string
+          gym_id?: string
+          id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          total_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_images: {
+        Row: {
+          gym_id: string
+          id: string
+          is_primary: boolean
+          url: string
+        }
+        Insert: {
+          gym_id: string
+          id?: string
+          is_primary?: boolean
+          url: string
+        }
+        Update: {
+          gym_id?: string
+          id?: string
+          is_primary?: boolean
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_images_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gyms: {
+        Row: {
+          address: string
+          city: string
+          close_time: string
+          created_at: string
+          description: string
+          id: string
+          is_verified: boolean
+          name: string
+          open_time: string
+          owner_id: string
+          phone: string
+          pincode: string
+          price_per_day: number
+          price_per_month: number
+          price_per_year: number
+          state: string
+        }
+        Insert: {
+          address: string
+          city: string
+          close_time: string
+          created_at?: string
+          description: string
+          id?: string
+          is_verified?: boolean
+          name: string
+          open_time: string
+          owner_id: string
+          phone: string
+          pincode: string
+          price_per_day: number
+          price_per_month: number
+          price_per_year: number
+          state: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          close_time?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_verified?: boolean
+          name?: string
+          open_time?: string
+          owner_id?: string
+          phone?: string
+          pincode?: string
+          price_per_day?: number
+          price_per_month?: number
+          price_per_year?: number
+          state?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          gym_id: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          gym_id: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          gym_id?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "owner" | "admin"
+      booking_status: "pending" | "confirmed" | "cancelled"
+      duration_type: "day" | "month" | "year"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +361,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "owner", "admin"],
+      booking_status: ["pending", "confirmed", "cancelled"],
+      duration_type: ["day", "month", "year"],
+    },
   },
 } as const
