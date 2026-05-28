@@ -4,61 +4,63 @@
 
 @layer base {
   :root {
-    /* GymSpot palette: charcoal #1a1a2e, electric blue #4f46e5, white */
-    --background: 0 0% 100%;
-    --foreground: 240 30% 14%;
+    /* GymSpot palette: bg #0a0a0a, lime #c8f04b, text #f5f5f5, muted #888, cards #111 */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 30% 14%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 30% 14%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 240 30% 14%;            /* charcoal */
-    --primary-foreground: 0 0% 100%;
+    --primary: 74 84% 62%;             /* lime #c8f04b */
+    --primary-foreground: 0 0% 4%;
 
-    --accent-brand: 243 75% 59%;       /* electric blue #4f46e5 */
-    --accent-brand-foreground: 0 0% 100%;
-    --accent-brand-glow: 243 75% 70%;
+    --accent-brand: 74 84% 62%;
+    --accent-brand-foreground: 0 0% 4%;
+    --accent-brand-glow: 74 84% 72%;
 
-    --secondary: 240 20% 96%;
-    --secondary-foreground: 240 30% 14%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 240 15% 96%;
-    --muted-foreground: 240 8% 45%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 53%;
 
-    --accent: 243 75% 59%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 74 84% 62%;
+    --accent-foreground: 0 0% 4%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 15% 90%;
-    --input: 240 15% 90%;
-    --ring: 243 75% 59%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 74 84% 62%;
 
     --radius: 0.75rem;
 
-    --gradient-hero: linear-gradient(135deg, hsl(240 30% 14%) 0%, hsl(243 75% 25%) 60%, hsl(243 75% 45%) 100%);
-    --gradient-brand: linear-gradient(135deg, hsl(243 75% 59%), hsl(243 75% 70%));
-    --shadow-brand: 0 20px 50px -15px hsl(243 75% 59% / 0.45);
-    --shadow-card: 0 8px 30px -10px hsl(240 30% 14% / 0.15);
+    --gradient-hero: radial-gradient(circle at 85% 15%, hsl(74 84% 62% / 0.25), transparent 45%),
+                     radial-gradient(circle at 10% 90%, hsl(270 80% 55% / 0.30), transparent 45%),
+                     linear-gradient(180deg, hsl(0 0% 4%), hsl(0 0% 4%));
+    --gradient-brand: linear-gradient(135deg, hsl(74 84% 62%), hsl(74 84% 72%));
+    --shadow-brand: 0 20px 50px -15px hsl(74 84% 62% / 0.45);
+    --shadow-card: 0 8px 30px -10px hsl(0 0% 0% / 0.6);
 
-    --sidebar-background: 240 30% 14%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 243 75% 59%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 30% 20%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 240 30% 22%;
-    --sidebar-ring: 243 75% 59%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 74 84% 62%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 74 84% 62%;
   }
 }
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground antialiased; font-family: 'Inter', system-ui, sans-serif; }
-  h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.02em; }
+  body { @apply bg-background text-foreground antialiased; font-family: 'DM Sans', system-ui, sans-serif; }
+  h1, h2, h3, h4 { font-family: 'Bebas Neue', 'DM Sans', sans-serif; letter-spacing: 0.01em; }
 }
 
 @layer utilities {
@@ -66,4 +68,21 @@
   .bg-gradient-brand { background: var(--gradient-brand); }
   .shadow-brand { box-shadow: var(--shadow-brand); }
   .shadow-card { box-shadow: var(--shadow-card); }
+  .font-display { font-family: 'Bebas Neue', sans-serif; }
+  .text-outline {
+    -webkit-text-stroke: 2px hsl(0 0% 96%);
+    color: transparent;
+  }
+  .glass {
+    background: hsl(0 0% 100% / 0.04);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid hsl(0 0% 100% / 0.08);
+  }
+  .animate-fade-in-up { animation: fade-in-up 0.7s ease-out both; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
