@@ -1,79 +1,164 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Dumbbell, PlusCircle, CalendarRange, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, CalendarRange, IndianRupee, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { StatusBadge } from "@/components/owner/ui";
 
-const links = [
-  { to: "/owner/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/owner/gyms", label: "My Gyms", icon: Dumbbell },
-  { to: "/owner/gyms/new", label: "Add Gym", icon: PlusCircle },
-  { to: "/owner/bookings", label: "Bookings", icon: CalendarRange },
-];
+type Stat = { label: string; value: string; Icon: typeof Building2 };
+type Row = {
+  id: string;
+  user_name: string;
+  gym_name: string;
+  duration_type: string;
+  total_price: number;
+  status: string;
+  created_at: string;
+};
 
-const OwnerDashboard = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const name = (user?.user_metadata?.name as string) || user?.email?.split("@")[0] || "Owner";
+const Dashboard = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ gyms: 0, bookings: 0, revenue: 0, rating: 0 });
+  const [rows, setRows] = useState<Row[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      setLoading(true);
+      const { data: gyms } = await supabase.from("gyms").select("id, name").eq("owner_id", user.id);
+      const gymIds = (gyms ?? []).map((g) => g.id);
+      const gymMap = new Map((gyms ?? []).map((g) => [g.id, g.name]));
+
+      let bookings: any[] = [];
+      if (gymIds.length) {
+        const { data } = await supabase
+          .from("bookings")
+          .select("id, user_id, gym_id, duration_type, total_price, status, created_at")
+          .in("gym_id", gymIds)
+          .order("created_at", { ascending: false });
+        bookings = data ?? [];
+      }
+
+      // Revenue this month (confirmed)
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const revenue = bookings
+        .filter((b) => b.status === "confirmed" && new Date(b.created_at) >= monthStart)
+        .reduce((sum, b) => sum + Number(b.total_price || 0), 0);
+
+      let rating = 0;
+      if (gymIds.length) {
+        const { data: reviews } = await supabase.from("reviews").select("rating").in("gym_id", gymIds);
+        if (reviews && reviews.length) {
+          rating = reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length;
+        }
+      }
+
+      // Resolve user names
+      const userIds = [...new Set(bookings.slice(0, 8).map((b) => b.user_id))];
+      const nameMap = new Map<string, string>();
+      if (userIds.length) {
+        const { data: profiles } = await supabase.from("profiles").select("id, name").in("id", userIds);
+        (profiles ?? []).forEach((p) => nameMap.set(p.id, p.name));
+      }
+
+      setStats({
+        gyms: gyms?.length ?? 0,
+        bookings: bookings.length,
+        revenue,
+        rating: Math.round(rating * 10) / 10,
+      });
+      setRows(
+        bookings.slice(0, 8).map((b) => ({
+          id: b.id,
+          user_name: nameMap.get(b.user_id) ?? "—",
+          gym_name: gymMap.get(b.gym_id) ?? "—",
+          duration_type: b.duration_type,
+          total_price: Number(b.total_price),
+          status: b.status,
+          created_at: b.created_at,
+        }))
+      );
+      setLoading(false);
+    })();
+  }, [user]);
+
+  const cards: Stat[] = [
+    { label: "Total Gyms", value: String(stats.gyms), Icon: Building2 },
+    { label: "Total Bookings", value: String(stats.bookings), Icon: CalendarRange },
+    { label: "This Month Revenue", value: `₹${stats.revenue.toLocaleString("en-IN")}`, Icon: IndianRupee },
+    { label: "Avg Rating", value: stats.rating ? stats.rating.toFixed(1) : "—", Icon: Star },
+  ];
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <aside className="hidden w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground sm:flex">
-        <div className="p-6">
-          <Link to="/" className="text-lg font-bold text-white">GymSpot 🏋️</Link>
-          <p className="mt-1 text-xs uppercase tracking-wider text-white/50">Owner Console</p>
-        </div>
-        <nav className="flex-1 space-y-1 px-3">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  isActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-white/70 hover:bg-sidebar-accent hover:text-white"
-                }`
-              }
-            >
-              <l.icon className="h-4 w-4" /> {l.label}
-            </NavLink>
-          ))}
-        </nav>
-        <button onClick={async () => { await signOut(); navigate("/"); }} className="m-3 inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white/80 hover:bg-sidebar-accent">
-          <LogOut className="h-4 w-4" /> Sign out
-        </button>
-      </aside>
+    <div className="space-y-8">
+      <header>
+        <h1 className="font-display text-4xl tracking-wide text-white">Dashboard</h1>
+        <p className="mt-1 text-sm text-white/60">Overview of your gym business</p>
+      </header>
 
-      <main className="flex-1 p-6 sm:p-10">
-        {/* Mobile nav */}
-        <nav className="mb-6 flex flex-wrap gap-2 sm:hidden">
-          {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end className={({ isActive }) => `rounded-lg px-3 py-2 text-xs font-medium ${isActive ? "bg-brand text-brand-foreground" : "bg-secondary text-foreground"}`}>
-              {l.label}
-            </NavLink>
-          ))}
-        </nav>
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-32 animate-pulse rounded-2xl bg-[#111]" />
+            ))
+          : cards.map((c) => (
+              <div
+                key={c.label}
+                className="group rounded-2xl border border-white/10 bg-[#111] p-5 transition hover:border-[#c8f04b]/40 hover:shadow-[0_0_30px_-10px_rgba(200,240,75,0.4)]"
+              >
+                <c.Icon className="h-6 w-6 text-[#c8f04b]" />
+                <p className="mt-4 font-display text-4xl tracking-wide text-white">{c.value}</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-white/50">{c.label}</p>
+              </div>
+            ))}
+      </div>
 
-        <div className="rounded-3xl bg-gradient-hero p-8 text-white sm:p-12">
-          <p className="text-sm font-medium uppercase tracking-wider text-brand-glow">Owner dashboard</p>
-          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Welcome, {name} 👋</h1>
-          <p className="mt-2 text-white/70">List, manage, and grow your gym business from here.</p>
-        </div>
-
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { t: "Total Gyms", v: "0" },
-            { t: "Bookings", v: "0" },
-            { t: "Pending", v: "0" },
-            { t: "Revenue", v: "$0" },
-          ].map((s) => (
-            <div key={s.t} className="rounded-2xl border border-border bg-card p-6 shadow-card">
-              <p className="text-sm text-muted-foreground">{s.t}</p>
-              <p className="mt-2 text-3xl font-bold">{s.v}</p>
+      {/* Recent bookings */}
+      <section className="rounded-2xl border border-white/10 bg-[#111]">
+        <header className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <h2 className="font-display text-xl tracking-wide text-white">Recent Bookings</h2>
+        </header>
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="space-y-2 p-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-10 animate-pulse rounded bg-white/5" />
+              ))}
             </div>
-          ))}
+          ) : rows.length === 0 ? (
+            <div className="p-10 text-center text-sm text-white/50">No bookings yet</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-white/50">
+                  <th className="px-5 py-3">User</th>
+                  <th className="px-5 py-3">Gym</th>
+                  <th className="px-5 py-3">Duration</th>
+                  <th className="px-5 py-3">Amount</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={r.id} className={`border-t border-white/5 transition hover:bg-white/5 ${i % 2 ? "bg-white/[0.02]" : ""}`}>
+                    <td className="px-5 py-3 text-white">{r.user_name}</td>
+                    <td className="px-5 py-3 text-white/80">{r.gym_name}</td>
+                    <td className="px-5 py-3 capitalize text-white/70">{r.duration_type}</td>
+                    <td className="px-5 py-3 text-white">₹{r.total_price.toLocaleString("en-IN")}</td>
+                    <td className="px-5 py-3"><StatusBadge status={r.status} /></td>
+                    <td className="px-5 py-3 text-white/60">{new Date(r.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      </main>
+      </section>
     </div>
   );
 };
 
-export default OwnerDashboard;
+export default Dashboard;
