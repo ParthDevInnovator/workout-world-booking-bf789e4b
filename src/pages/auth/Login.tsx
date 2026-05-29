@@ -2,9 +2,9 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
-import { TextInput } from "@/components/ui/TextInput";
-import { SubmitButton } from "@/components/ui/SubmitButton";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { FloatingInput } from "@/components/auth/FloatingInput";
+import { AuthSubmit } from "@/components/auth/AuthSubmit";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,25 +27,28 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container flex items-center justify-center py-12">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-card">
-          <h1 className="text-2xl font-bold">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Log in to manage bookings or your gyms.</p>
+    <AuthShell>
+      <div className="space-y-2">
+        <Link to="/" className="font-display text-2xl tracking-wide text-[#c8f04b] lg:hidden">
+          GYMSPOT
+        </Link>
+        <h1 className="font-display text-5xl tracking-wide text-white">WELCOME BACK</h1>
+        <p className="text-sm text-[#888]">Log in to manage bookings or your gyms.</p>
+      </div>
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
-            <TextInput id="email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            <TextInput id="pw" type="password" label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            <SubmitButton type="submit" loading={loading} className="w-full">Login</SubmitButton>
-          </form>
+      <form onSubmit={submit} className="mt-10 space-y-5">
+        <FloatingInput id="email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <FloatingInput id="pw" type="password" label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <AuthSubmit type="submit" loading={loading}>LOGIN</AuthSubmit>
+      </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            New here? <Link to="/auth/signup" className="font-semibold text-brand hover:underline">Create an account</Link>
-          </p>
-        </div>
-      </main>
-    </div>
+      <p className="mt-8 text-center text-sm text-[#888]">
+        New here?{" "}
+        <Link to="/auth/signup" className="font-semibold text-[#c8f04b] hover:underline">
+          Create an account
+        </Link>
+      </p>
+    </AuthShell>
   );
 };
 
