@@ -3,10 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
-import { TextInput } from "@/components/ui/TextInput";
-import { SubmitButton } from "@/components/ui/SubmitButton";
-import { User, Building2 } from "lucide-react";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { FloatingInput } from "@/components/auth/FloatingInput";
+import { AuthSubmit } from "@/components/auth/AuthSubmit";
+import { cn } from "@/lib/utils";
 
 const schema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -14,6 +14,11 @@ const schema = z.object({
   password: z.string().min(6).max(72),
   role: z.enum(["user", "owner"]),
 });
+
+const ROLES = [
+  { v: "user" as const, emoji: "🏃", title: "I'm a User", desc: "Browse and book gyms" },
+  { v: "owner" as const, emoji: "🏢", title: "I'm a Gym Owner", desc: "List and manage gyms" },
+];
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -40,48 +45,57 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="container flex items-center justify-center py-12">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-card">
-          <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Start booking or listing gyms in seconds.</p>
+    <AuthShell>
+      <div className="space-y-2">
+        <Link to="/" className="font-display text-2xl tracking-wide text-[#c8f04b] lg:hidden">
+          GYMSPOT
+        </Link>
+        <h1 className="font-display text-5xl tracking-wide text-white">CREATE ACCOUNT</h1>
+        <p className="text-sm text-[#888]">Start booking or listing gyms in seconds.</p>
+      </div>
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
-            <TextInput id="name" label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <TextInput id="email" type="email" label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-            <TextInput id="pw" type="password" label="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+      <form onSubmit={submit} className="mt-8 space-y-5">
+        <FloatingInput id="name" label="Full Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+        <FloatingInput id="email" type="email" label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+        <FloatingInput id="pw" type="password" label="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
 
-            <div>
-              <p className="mb-2 text-sm font-medium">I am a…</p>
-              <div className="grid grid-cols-2 gap-3">
-                {([
-                  { v: "user", icon: User, t: "User", d: "Book gyms" },
-                  { v: "owner", icon: Building2, t: "Gym Owner", d: "List gyms" },
-                ] as const).map((o) => (
-                  <button
-                    type="button"
-                    key={o.v}
-                    onClick={() => setForm({ ...form, role: o.v })}
-                    className={`rounded-xl border p-4 text-left transition ${form.role === o.v ? "border-brand bg-brand/5 ring-2 ring-brand" : "border-border hover:border-foreground/30"}`}
-                  >
-                    <o.icon className={`h-5 w-5 ${form.role === o.v ? "text-brand" : "text-muted-foreground"}`} />
-                    <div className="mt-2 font-semibold">{o.t}</div>
-                    <div className="text-xs text-muted-foreground">{o.d}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <SubmitButton type="submit" loading={loading} className="w-full">Create Account</SubmitButton>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account? <Link to="/auth/login" className="font-semibold text-brand hover:underline">Log in</Link>
-          </p>
+        <div className="pt-2">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#888]">Choose your role</p>
+          <div className="grid grid-cols-2 gap-3">
+            {ROLES.map((o) => {
+              const active = form.role === o.v;
+              return (
+                <button
+                  type="button"
+                  key={o.v}
+                  onClick={() => setForm({ ...form, role: o.v })}
+                  className={cn(
+                    "rounded-xl border bg-white/[0.02] p-4 text-left transition-all duration-200",
+                    "active:scale-[0.97]",
+                    active
+                      ? "border-[#c8f04b] bg-[#c8f04b]/5 shadow-[0_0_0_3px_hsl(74_84%_62%/0.15)]"
+                      : "border-white/20 hover:border-white/40"
+                  )}
+                >
+                  <div className="text-2xl">{o.emoji}</div>
+                  <div className={cn("mt-2 font-semibold", active ? "text-[#c8f04b]" : "text-white")}>{o.title}</div>
+                  <div className="mt-0.5 text-xs text-[#888]">{o.desc}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </main>
-    </div>
+
+        <AuthSubmit type="submit" loading={loading}>CREATE ACCOUNT</AuthSubmit>
+      </form>
+
+      <p className="mt-8 text-center text-sm text-[#888]">
+        Already have an account?{" "}
+        <Link to="/auth/login" className="font-semibold text-[#c8f04b] hover:underline">
+          Log in
+        </Link>
+      </p>
+    </AuthShell>
   );
 };
 
