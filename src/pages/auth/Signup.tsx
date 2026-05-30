@@ -31,11 +31,11 @@ const Signup = () => {
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email: form.email,
+      email: form.email.toLowerCase().trim(),
       password: form.password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: { name: form.name, role: form.role },
+        data: { name: form.name.trim(), role: form.role },
       },
     });
     setLoading(false);
