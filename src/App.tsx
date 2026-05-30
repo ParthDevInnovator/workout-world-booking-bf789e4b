@@ -37,6 +37,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/signup" element={<Signup />} />
+            <Route path="/gyms" element={<Gyms />} />
             <Route path="/user/*" element={<ProtectedRoute role="user"><UserDashboard /></ProtectedRoute>} />
             <Route path="/owner" element={<OwnerShell><OwnerDashboard /></OwnerShell>} />
             <Route path="/owner/dashboard" element={<OwnerShell><OwnerDashboard /></OwnerShell>} />
