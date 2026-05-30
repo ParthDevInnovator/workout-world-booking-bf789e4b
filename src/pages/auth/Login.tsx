@@ -15,12 +15,21 @@ const Login = () => {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase().trim(),
+      password: password,
+    });
+    console.log("login result:", data, error);
+    if (error || !data.user) {
       setLoading(false);
-      return toast.error(error.message);
+      return toast.error(error?.message ?? "Login failed");
     }
-    const { data: rd } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).maybeSingle();
+    const { data: rd, error: rErr } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+    console.log("role result:", rd, rErr);
     setLoading(false);
     toast.success("Welcome back!");
     navigate(rd?.role === "owner" ? "/owner/dashboard" : "/user/dashboard");
