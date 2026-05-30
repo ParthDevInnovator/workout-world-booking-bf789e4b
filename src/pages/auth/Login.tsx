@@ -22,6 +22,9 @@ const Login = () => {
     console.log("login result:", data, error);
     if (error || !data.user) {
       setLoading(false);
+      if ((error as any)?.code === "email_not_confirmed") {
+        return toast.error("Please sign up again — click Sign Up button");
+      }
       return toast.error(error?.message ?? "Login failed");
     }
     const { data: rd, error: rErr } = await supabase
@@ -32,7 +35,7 @@ const Login = () => {
     console.log("role result:", rd, rErr);
     setLoading(false);
     toast.success("Welcome back!");
-    navigate(rd?.role === "owner" ? "/owner/dashboard" : "/user/dashboard");
+    navigate(rd?.role === "owner" ? "/owner/dashboard" : "/gyms");
   };
 
   return (
