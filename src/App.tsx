@@ -9,6 +9,7 @@ import { OwnerLayout } from "@/components/owner/OwnerLayout";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import Gyms from "./pages/Gyms";
 import UserDashboard from "./pages/user/Dashboard";
 import OwnerDashboard from "./pages/owner/Dashboard";
 import MyGyms from "./pages/owner/MyGyms";
