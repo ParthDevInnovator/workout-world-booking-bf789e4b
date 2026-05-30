@@ -30,18 +30,28 @@ const Signup = () => {
     const parsed = schema.safeParse(form);
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: form.email.toLowerCase().trim(),
+    const email = form.email.toLowerCase().trim();
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
       password: form.password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
         data: { name: form.name.trim(), role: form.role },
       },
     });
+    if (signUpError) {
+      setLoading(false);
+      return toast.error(signUpError.message);
+    }
+    // Auto sign in right after signup (email confirmation disabled)
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: form.password,
+    });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (signInError) return toast.error(signInError.message);
     toast.success("Account created!");
-    navigate(form.role === "owner" ? "/owner/dashboard" : "/user/dashboard");
+    navigate(form.role === "owner" ? "/owner/dashboard" : "/gyms");
   };
 
   return (
