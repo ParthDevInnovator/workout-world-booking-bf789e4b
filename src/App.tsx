@@ -48,7 +48,7 @@ const App = () => (
             <Route path="/owner" element={<OwnerShell><OwnerDashboard /></OwnerShell>} />
             <Route path="/owner/dashboard" element={<OwnerShell><OwnerDashboard /></OwnerShell>} />
             <Route path="/owner/gyms" element={<OwnerShell><MyGyms /></OwnerShell>} />
-            <Route path="/owner/add-gym" element={<OwnerShell><MyGyms /></OwnerShell>} />
+            <Route path="/owner/add-gym" element={<OwnerShell><AddGym /></OwnerShell>} />
             <Route path="/owner/bookings" element={<OwnerShell><Bookings /></OwnerShell>} />
             <Route path="/owner/profile" element={<OwnerShell><OwnerProfile /></OwnerShell>} />
             <Route path="*" element={<NotFound />} />
