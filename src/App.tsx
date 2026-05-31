@@ -12,11 +12,13 @@ import Signup from "./pages/auth/Signup";
 import Gyms from "./pages/Gyms";
 import GymDetail from "./pages/GymDetail";
 import UserDashboard from "./pages/user/Dashboard";
+import UserBookings from "./pages/user/Bookings";
+import UserProfile from "./pages/user/Profile";
 import OwnerDashboard from "./pages/owner/Dashboard";
 import MyGyms from "./pages/owner/MyGyms";
 import AddGym from "./pages/owner/AddGym";
 import Bookings from "./pages/owner/Bookings";
-import Profile from "./pages/owner/Profile";
+import OwnerProfile from "./pages/owner/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,13 +42,15 @@ const App = () => (
             <Route path="/auth/signup" element={<Signup />} />
             <Route path="/gyms" element={<Gyms />} />
             <Route path="/gyms/:id" element={<GymDetail />} />
-            <Route path="/user/*" element={<ProtectedRoute role="user"><UserDashboard /></ProtectedRoute>} />
+            <Route path="/user/dashboard" element={<ProtectedRoute role="user"><UserDashboard /></ProtectedRoute>} />
+            <Route path="/user/bookings" element={<ProtectedRoute role="user"><UserBookings /></ProtectedRoute>} />
+            <Route path="/user/profile" element={<ProtectedRoute role="user"><UserProfile /></ProtectedRoute>} />
             <Route path="/owner" element={<OwnerShell><OwnerDashboard /></OwnerShell>} />
             <Route path="/owner/dashboard" element={<OwnerShell><OwnerDashboard /></OwnerShell>} />
             <Route path="/owner/gyms" element={<OwnerShell><MyGyms /></OwnerShell>} />
             <Route path="/owner/add-gym" element={<OwnerShell><AddGym /></OwnerShell>} />
             <Route path="/owner/bookings" element={<OwnerShell><Bookings /></OwnerShell>} />
-            <Route path="/owner/profile" element={<OwnerShell><Profile /></OwnerShell>} />
+            <Route path="/owner/profile" element={<OwnerShell><OwnerProfile /></OwnerShell>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
