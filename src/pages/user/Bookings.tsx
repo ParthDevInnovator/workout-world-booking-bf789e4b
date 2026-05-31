@@ -48,23 +48,46 @@ const UserBookings = () => {
 
   const fetchBookings = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    // 1) Fetch bookings
+    const { data: bData, error: bErr } = await supabase
       .from("bookings")
-      .select(
-        `id, gym_id, start_date, end_date, duration_type, total_price, status, created_at, gyms!inner(name, city), gym_images!inner(url, is_primary)`
-      )
+      .select("id, gym_id, start_date, end_date, duration_type, total_price, status, created_at")
       .eq("user_id", user!.id)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("bookings fetch error:", error);
+    if (bErr || !bData) {
+      console.error("bookings fetch error:", bErr);
       toast.error("Failed to load bookings");
       setLoading(false);
       return;
     }
 
-    const parsed: Booking[] =
-      (data as any[] | null)?.map((row: any) => ({
+    // 2) Fetch gyms for those gym_ids
+    const gymIds = [...new Set(bData.map((b) => b.gym_id))];
+    const { data: gymsData } = await supabase
+      .from("gyms")
+      .select("id, name, city")
+      .in("id", gymIds);
+
+    // 3) Fetch gym images for those gym_ids
+    const { data: imagesData } = await supabase
+      .from("gym_images")
+      .select("gym_id, url, is_primary")
+      .in("gym_id", gymIds);
+
+    const gymMap = new Map(gymsData?.map((g) => [g.id, g]) ?? []);
+    const imgMap = new Map<string, { url: string; is_primary: boolean }[]>();
+    imagesData?.forEach((img) => {
+      const arr = imgMap.get(img.gym_id) ?? [];
+      arr.push(img);
+      imgMap.set(img.gym_id, arr);
+    });
+
+    const parsed: Booking[] = bData.map((row: any) => {
+      const gym = gymMap.get(row.gym_id);
+      const imgs = imgMap.get(row.gym_id) ?? [];
+      const primary = imgs.find((i) => i.is_primary)?.url || imgs[0]?.url;
+      return {
         id: row.id,
         gym_id: row.gym_id,
         start_date: row.start_date,
@@ -73,10 +96,11 @@ const UserBookings = () => {
         total_price: row.total_price,
         status: row.status,
         created_at: row.created_at,
-        gym_name: row.gyms?.name ?? "Gym",
-        gym_city: row.gyms?.city ?? "",
-        gym_image: row.gym_images?.find((img: any) => img.is_primary)?.url || row.gym_images?.[0]?.url,
-      })) ?? [];
+        gym_name: gym?.name ?? "Gym",
+        gym_city: gym?.city ?? "",
+        gym_image: primary,
+      };
+    });
 
     setBookings(parsed);
     setLoading(false);
