@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, MapPin, Clock, ArrowRight, Dumbbell } from "lucide-react";
+import { Search, MapPin, Clock, ArrowRight, Dumbbell, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Gym {
@@ -11,7 +11,11 @@ interface Gym {
   close_time: string;
   price_per_day: number;
   primary_image?: string;
+  avg_rating: number;
+  review_count: number;
 }
+
+type SortKey = "newest" | "rating" | "price";
 
 const SkeletonCard = () => (
   <div className="rounded-2xl border border-white/10 bg-card p-3 animate-pulse">
@@ -25,9 +29,23 @@ const SkeletonCard = () => (
   </div>
 );
 
+const RatingPill = ({ rating, count }: { rating: number; count: number }) => {
+  if (!count) {
+    return <span className="text-xs text-white/40">No reviews yet</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-white/80">
+      <Star className="h-3.5 w-3.5 fill-[#c8f04b] text-[#c8f04b]" />
+      <span className="font-semibold">{rating.toFixed(1)}</span>
+      <span className="text-white/40">
+        ({count} review{count !== 1 ? "s" : ""})
+      </span>
+    </span>
+  );
+};
+
 const GymCard = ({ gym }: { gym: Gym }) => (
   <div className="group relative rounded-2xl border border-white/10 bg-card p-3 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#c8f04b]/50 hover:shadow-[0_0_24px_-8px_rgba(200,240,75,0.35)]">
-    {/* Image */}
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-white/5">
       {gym.primary_image ? (
         <img
@@ -43,11 +61,8 @@ const GymCard = ({ gym }: { gym: Gym }) => (
       )}
     </div>
 
-    {/* Content */}
     <div className="mt-4 px-1">
-      <h3 className="font-display text-xl tracking-wide text-foreground truncate">
-        {gym.name}
-      </h3>
+      <h3 className="font-display text-xl tracking-wide text-foreground truncate">{gym.name}</h3>
       <div className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
         <MapPin className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{gym.city}</span>
@@ -58,11 +73,14 @@ const GymCard = ({ gym }: { gym: Gym }) => (
           {gym.open_time} — {gym.close_time}
         </span>
       </div>
+      <div className="mt-2">
+        <RatingPill rating={gym.avg_rating} count={gym.review_count} />
+      </div>
 
       <div className="mt-4 flex items-center justify-between">
         <span className="font-display text-xl text-[#c8f04b]">
           ₹{gym.price_per_day}
-          <span className="text-xs font-normal text-white/40 ml-1">/day</span>
+          <span className="ml-1 text-xs font-normal text-white/40">/day</span>
         </span>
         <Link
           to={`/gyms/${gym.id}`}
@@ -79,6 +97,7 @@ const Gyms = () => {
   const [gyms, setGyms] = useState<Gym[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -96,24 +115,34 @@ const Gyms = () => {
         return;
       }
 
-      // Fetch primary images
       const gymIds = data.map((g) => g.id);
-      const { data: images } = await supabase
-        .from("gym_images")
-        .select("gym_id, url")
-        .in("gym_id", gymIds)
-        .eq("is_primary", true);
+
+      const [imgRes, reviewRes] = await Promise.all([
+        supabase.from("gym_images").select("gym_id, url").in("gym_id", gymIds).eq("is_primary", true),
+        supabase.from("reviews").select("gym_id, rating").in("gym_id", gymIds),
+      ]);
 
       const imageMap = new Map<string, string>();
-      images?.forEach((img) => {
-        imageMap.set(img.gym_id, img.url);
+      imgRes.data?.forEach((img) => imageMap.set(img.gym_id, img.url));
+
+      const ratingMap = new Map<string, { sum: number; count: number }>();
+      reviewRes.data?.forEach((r) => {
+        const cur = ratingMap.get(r.gym_id) ?? { sum: 0, count: 0 };
+        cur.sum += r.rating || 0;
+        cur.count += 1;
+        ratingMap.set(r.gym_id, cur);
       });
 
       setGyms(
-        data.map((g) => ({
-          ...g,
-          primary_image: imageMap.get(g.id),
-        }))
+        data.map((g) => {
+          const r = ratingMap.get(g.id);
+          return {
+            ...g,
+            primary_image: imageMap.get(g.id),
+            avg_rating: r ? r.sum / r.count : 0,
+            review_count: r?.count ?? 0,
+          };
+        })
       );
       setLoading(false);
     };
@@ -123,17 +152,23 @@ const Gyms = () => {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return gyms;
-    return gyms.filter(
-      (g) =>
-        g.name.toLowerCase().includes(q) ||
-        g.city.toLowerCase().includes(q)
-    );
-  }, [gyms, query]);
+    let list = gyms;
+    if (q) {
+      list = list.filter(
+        (g) => g.name.toLowerCase().includes(q) || g.city.toLowerCase().includes(q)
+      );
+    }
+    const sorted = [...list];
+    if (sort === "rating") {
+      sorted.sort((a, b) => b.avg_rating - a.avg_rating || b.review_count - a.review_count);
+    } else if (sort === "price") {
+      sorted.sort((a, b) => Number(a.price_per_day) - Number(b.price_per_day));
+    }
+    return sorted;
+  }, [gyms, query, sort]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Navbar */}
       <header className="sticky top-0 z-40 border-b border-white/10 glass">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/" className="font-display text-3xl tracking-wider text-[#c8f04b]">
@@ -148,9 +183,7 @@ const Gyms = () => {
         </div>
       </header>
 
-      {/* Page Content */}
       <div className="container py-8 sm:py-12">
-        {/* Header */}
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="font-display text-5xl tracking-wide sm:text-6xl">
             BROWSE <span className="text-[#c8f04b]">GYMS</span>
@@ -160,9 +193,8 @@ const Gyms = () => {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="mx-auto mt-8 max-w-xl">
-          <div className="flex items-center gap-2 rounded-full border border-white/15 bg-card px-5 py-3 shadow-card transition focus-within:border-[#c8f04b]/50 focus-within:shadow-[0_0_20px_-6px_rgba(200,240,75,0.25)]">
+        <div className="mx-auto mt-8 flex max-w-3xl flex-col gap-3 sm:flex-row">
+          <div className="flex flex-1 items-center gap-2 rounded-full border border-white/15 bg-card px-5 py-3 shadow-card transition focus-within:border-[#c8f04b]/50 focus-within:shadow-[0_0_20px_-6px_rgba(200,240,75,0.25)]">
             <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
             <input
               value={query}
@@ -171,14 +203,23 @@ const Gyms = () => {
               className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="rounded-full border border-white/15 bg-card px-5 py-3 text-sm text-foreground outline-none transition focus:border-[#c8f04b]/50"
+          >
+            <option value="newest">Newest</option>
+            <option value="rating">Top Rated</option>
+            <option value="price">Price: Low to High</option>
+          </select>
         </div>
 
-        {/* Results count */}
         <p className="mt-6 text-sm text-muted-foreground">
-          {loading ? "Loading gyms..." : `${filtered.length} gym${filtered.length !== 1 ? "s" : ""} found`}
+          {loading
+            ? "Loading gyms..."
+            : `${filtered.length} gym${filtered.length !== 1 ? "s" : ""} found`}
         </p>
 
-        {/* Grid */}
         {loading ? (
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
