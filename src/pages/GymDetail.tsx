@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ArrowLeft, MapPin, Clock, Phone } from "lucide-react";
+import GymReviews from "@/components/GymReviews";
 
 type Gym = {
   id: string;
