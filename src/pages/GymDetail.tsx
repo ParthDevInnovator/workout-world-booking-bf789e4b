@@ -232,6 +232,8 @@ export default function GymDetail() {
             )}
           </aside>
         </div>
+
+        <GymReviews gymId={gym.id} />
       </div>
     </div>
   );
