@@ -160,12 +160,22 @@ const Bookings = () => {
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={r.id} className={`border-t border-white/5 hover:bg-white/5 ${i % 2 ? "bg-white/[0.02]" : ""}`}>
-                  <td className="px-5 py-3 text-white">{r.user_name}</td>
-                  <td className="px-5 py-3 text-white/80">{r.gym_name}</td>
-                  <td className="px-5 py-3 text-white/60">{new Date(r.start_date).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 text-white/60">{new Date(r.end_date).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 capitalize text-white/70">{r.duration_type}</td>
-                  <td className="px-5 py-3 text-white">₹{r.total_price.toLocaleString("en-IN")}</td>
+                  <td className="px-5 py-3">
+                    <div className="text-white">{r.user_name}</div>
+                    {r.user_email && (
+                      <div className="text-xs text-white/40">{r.user_email}</div>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="text-white/80">{r.gym_name}</div>
+                    {r.gym_city && (
+                      <div className="text-xs text-white/40">{r.gym_city}</div>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-white/60">{fmtDate(r.start_date)}</td>
+                  <td className="px-5 py-3 text-white/60">{fmtDate(r.end_date)}</td>
+                  <td className="px-5 py-3 capitalize text-white/70"><DurationBadge type={r.duration_type} /></td>
+                  <td className="px-5 py-3 font-semibold text-[#c8f04b]">₹{r.total_price.toLocaleString("en-IN")}</td>
                   <td className="px-5 py-3"><StatusBadge status={r.status} /></td>
                   <td className="px-5 py-3">
                     {r.status === "pending" && (
