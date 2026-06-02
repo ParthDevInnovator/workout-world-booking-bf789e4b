@@ -5,10 +5,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FieldInput, GhostButton, LimeButton, StatusBadge } from "@/components/owner/ui";
 
+type RawBooking = {
+  id: string;
+  start_date: string;
+  end_date: string;
+  duration_type: string;
+  total_price: number;
+  status: string;
+  created_at: string;
+  user: { id: string; name: string | null; email: string | null } | null;
+  gym: { id: string; name: string | null; city: string | null } | null;
+};
+
 type Row = {
   id: string;
   user_name: string;
+  user_email: string;
   gym_name: string;
+  gym_city: string;
   start_date: string;
   end_date: string;
   duration_type: string;
@@ -17,6 +31,19 @@ type Row = {
 };
 
 const TABS = ["all", "pending", "confirmed", "cancelled"] as const;
+
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+const DurationBadge = ({ type }: { type: string }) => (
+  <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/70">
+    {type}
+  </span>
+);
 
 const Bookings = () => {
   const { user } = useAuth();
@@ -28,26 +55,28 @@ const Bookings = () => {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const { data: gyms } = await supabase.from("gyms").select("id, name").eq("owner_id", user.id);
+    const { data: gyms } = await supabase.from("gyms").select("id").eq("owner_id", user.id);
     const ids = (gyms ?? []).map((g) => g.id);
-    const gymMap = new Map((gyms ?? []).map((g) => [g.id, g.name]));
-    if (!ids.length) { setRows([]); setLoading(false); return; }
-    const { data: b } = await supabase
+    if (!ids.length) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+    const { data } = await supabase
       .from("bookings")
-      .select("id, user_id, gym_id, start_date, end_date, duration_type, total_price, status")
+      .select(
+        `id, start_date, end_date, duration_type, total_price, status, created_at, user:profiles(id, name, email), gym:gyms(id, name, city)`
+      )
       .in("gym_id", ids)
       .order("created_at", { ascending: false });
-    const userIds = [...new Set((b ?? []).map((x) => x.user_id))];
-    const nameMap = new Map<string, string>();
-    if (userIds.length) {
-      const { data: profiles } = await supabase.from("profiles").select("id, name").in("id", userIds);
-      (profiles ?? []).forEach((p) => nameMap.set(p.id, p.name));
-    }
+    const raw = (data ?? []) as unknown as RawBooking[];
     setRows(
-      (b ?? []).map((x) => ({
+      raw.map((x) => ({
         id: x.id,
-        user_name: nameMap.get(x.user_id) ?? "—",
-        gym_name: gymMap.get(x.gym_id) ?? "—",
+        user_name: x.user?.name?.trim() || "Unknown User",
+        user_email: x.user?.email ?? "",
+        gym_name: x.gym?.name ?? "—",
+        gym_city: x.gym?.city ?? "",
         start_date: x.start_date,
         end_date: x.end_date,
         duration_type: x.duration_type,
@@ -58,11 +87,16 @@ const Bookings = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => {
+    load();
+  }, [user]);
 
   const updateStatus = async (id: string, status: "confirmed" | "cancelled") => {
     const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(`Booking ${status}`);
     setRows((r) => r.map((x) => (x.id === id ? { ...x, status } : x)));
   };
@@ -70,7 +104,7 @@ const Bookings = () => {
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       if (tab !== "all" && r.status !== tab) return false;
-      if (q && !`${r.user_name} ${r.gym_name}`.toLowerCase().includes(q.toLowerCase())) return false;
+      if (q && !`${r.user_name} ${r.gym_name} ${r.user_email}`.toLowerCase().includes(q.toLowerCase())) return false;
       return true;
     });
   }, [rows, tab, q]);
@@ -126,12 +160,22 @@ const Bookings = () => {
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={r.id} className={`border-t border-white/5 hover:bg-white/5 ${i % 2 ? "bg-white/[0.02]" : ""}`}>
-                  <td className="px-5 py-3 text-white">{r.user_name}</td>
-                  <td className="px-5 py-3 text-white/80">{r.gym_name}</td>
-                  <td className="px-5 py-3 text-white/60">{new Date(r.start_date).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 text-white/60">{new Date(r.end_date).toLocaleDateString()}</td>
-                  <td className="px-5 py-3 capitalize text-white/70">{r.duration_type}</td>
-                  <td className="px-5 py-3 text-white">₹{r.total_price.toLocaleString("en-IN")}</td>
+                  <td className="px-5 py-3">
+                    <div className="text-white">{r.user_name}</div>
+                    {r.user_email && (
+                      <div className="text-xs text-white/40">{r.user_email}</div>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="text-white/80">{r.gym_name}</div>
+                    {r.gym_city && (
+                      <div className="text-xs text-white/40">{r.gym_city}</div>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 text-white/60">{fmtDate(r.start_date)}</td>
+                  <td className="px-5 py-3 text-white/60">{fmtDate(r.end_date)}</td>
+                  <td className="px-5 py-3 capitalize text-white/70"><DurationBadge type={r.duration_type} /></td>
+                  <td className="px-5 py-3 font-semibold text-[#c8f04b]">₹{r.total_price.toLocaleString("en-IN")}</td>
                   <td className="px-5 py-3"><StatusBadge status={r.status} /></td>
                   <td className="px-5 py-3">
                     {r.status === "pending" && (
