@@ -120,6 +120,7 @@ const AddGym = () => {
           price_per_day: Number(form.price_per_day),
           price_per_month: Number(form.price_per_month),
           price_per_year: Number(form.price_per_year),
+          is_verified: true,
         })
         .select("id")
         .single();

@@ -106,7 +106,6 @@ const Gyms = () => {
       const { data, error } = await supabase
         .from("gyms")
         .select("id, name, city, open_time, close_time, price_per_day")
-        .eq("is_verified", true)
         .order("created_at", { ascending: false });
 
       if (error || !data) {
