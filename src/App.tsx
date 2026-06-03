@@ -62,6 +62,10 @@ const App = () => (
             <Route path="/owner/add-gym" element={<OwnerShell><AddGym /></OwnerShell>} />
             <Route path="/owner/bookings" element={<OwnerShell><Bookings /></OwnerShell>} />
             <Route path="/owner/profile" element={<OwnerShell><OwnerProfile /></OwnerShell>} />
+            <Route path="/admin" element={<AdminShell><AdminDashboard /></AdminShell>} />
+            <Route path="/admin/dashboard" element={<AdminShell><AdminDashboard /></AdminShell>} />
+            <Route path="/admin/gyms" element={<AdminShell><AdminManageGyms /></AdminShell>} />
+            <Route path="/admin/users" element={<AdminShell><AdminUsers /></AdminShell>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
