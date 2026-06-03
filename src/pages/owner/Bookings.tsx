@@ -5,18 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { FieldInput, GhostButton, LimeButton, StatusBadge } from "@/components/owner/ui";
 
-type RawBooking = {
-  id: string;
-  start_date: string;
-  end_date: string;
-  duration_type: string;
-  total_price: number;
-  status: string;
-  created_at: string;
-  user: { id: string; name: string | null; email: string | null } | null;
-  gym: { id: string; name: string | null; city: string | null } | null;
-};
-
 type Row = {
   id: string;
   user_name: string;
@@ -55,35 +43,60 @@ const Bookings = () => {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const { data: gyms } = await supabase.from("gyms").select("id").eq("owner_id", user.id);
-    const ids = (gyms ?? []).map((g) => g.id);
-    if (!ids.length) {
+
+    // Step 1: owner gyms
+    const { data: ownerGyms } = await supabase
+      .from("gyms")
+      .select("id, name, city")
+      .eq("owner_id", user.id);
+    const gyms = ownerGyms ?? [];
+    const ownerGymIds = gyms.map((g) => g.id);
+
+    if (!ownerGymIds.length) {
       setRows([]);
       setLoading(false);
       return;
     }
-    const { data } = await supabase
+
+    // Step 2: bookings (no FK joins)
+    const { data: bookingsData } = await supabase
       .from("bookings")
-      .select(
-        `id, start_date, end_date, duration_type, total_price, status, created_at, user:profiles(id, name, email), gym:gyms(id, name, city)`
-      )
-      .in("gym_id", ids)
+      .select("*")
+      .in("gym_id", ownerGymIds)
       .order("created_at", { ascending: false });
-    const raw = (data ?? []) as unknown as RawBooking[];
-    setRows(
-      raw.map((x) => ({
-        id: x.id,
-        user_name: x.user?.name?.trim() || "Unknown User",
-        user_email: x.user?.email ?? "",
-        gym_name: x.gym?.name ?? "—",
-        gym_city: x.gym?.city ?? "",
-        start_date: x.start_date,
-        end_date: x.end_date,
-        duration_type: x.duration_type,
-        total_price: Number(x.total_price),
-        status: x.status,
-      }))
-    );
+    const bookings = bookingsData ?? [];
+
+    // Step 3: unique user ids
+    const userIds = [...new Set(bookings.map((b) => b.user_id))];
+
+    // Step 4: profiles
+    let profiles: { id: string; name: string | null; email: string | null }[] = [];
+    if (userIds.length) {
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", userIds);
+      profiles = profilesData ?? [];
+    }
+
+    // Step 5: merge in JS
+    const enriched: Row[] = bookings.map((b) => {
+      const profile = profiles.find((p) => p.id === b.user_id);
+      const gym = gyms.find((g) => g.id === b.gym_id);
+      return {
+        id: b.id,
+        user_name: profile?.name?.trim() || "Unknown User",
+        user_email: profile?.email || "",
+        gym_name: gym?.name || "Unknown Gym",
+        gym_city: gym?.city || "",
+        start_date: b.start_date,
+        end_date: b.end_date,
+        duration_type: b.duration_type,
+        total_price: Number(b.total_price),
+        status: b.status,
+      };
+    });
+    setRows(enriched);
     setLoading(false);
   };
 
