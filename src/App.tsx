@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { OwnerLayout } from "@/components/owner/OwnerLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
@@ -19,6 +20,9 @@ import MyGyms from "./pages/owner/MyGyms";
 import AddGym from "./pages/owner/AddGym";
 import Bookings from "./pages/owner/Bookings";
 import OwnerProfile from "./pages/owner/Profile";
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminManageGyms from "./pages/admin/ManageGyms";
+import AdminUsers from "./pages/admin/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +32,13 @@ const OwnerShell = ({ children }: { children: JSX.Element }) => (
     <OwnerLayout>{children}</OwnerLayout>
   </ProtectedRoute>
 );
+
+const AdminShell = ({ children }: { children: JSX.Element }) => (
+  <ProtectedRoute role="admin">
+    <AdminLayout>{children}</AdminLayout>
+  </ProtectedRoute>
+);
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -51,6 +62,10 @@ const App = () => (
             <Route path="/owner/add-gym" element={<OwnerShell><AddGym /></OwnerShell>} />
             <Route path="/owner/bookings" element={<OwnerShell><Bookings /></OwnerShell>} />
             <Route path="/owner/profile" element={<OwnerShell><OwnerProfile /></OwnerShell>} />
+            <Route path="/admin" element={<AdminShell><AdminDashboard /></AdminShell>} />
+            <Route path="/admin/dashboard" element={<AdminShell><AdminDashboard /></AdminShell>} />
+            <Route path="/admin/gyms" element={<AdminShell><AdminManageGyms /></AdminShell>} />
+            <Route path="/admin/users" element={<AdminShell><AdminUsers /></AdminShell>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
