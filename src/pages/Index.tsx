@@ -1,13 +1,33 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, ArrowRight, Dumbbell, MapPin, Calendar, Shield, Zap, Users, Star } from "lucide-react";
+import { Search, ArrowRight, Dumbbell, MapPin, Calendar, Shield, Zap, Users, Star, Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
+type NavItem = { to: string; label: string };
+
+const navItemsForRole = (hasUser: boolean, role: string | null): NavItem[] => {
+  if (!hasUser) return [];
+  if (role === "admin") return [{ to: "/admin/dashboard", label: "Admin Panel" }];
+  if (role === "owner")
+    return [
+      { to: "/owner/dashboard", label: "Dashboard" },
+      { to: "/owner/gyms", label: "My Gyms" },
+      { to: "/owner/add-gym", label: "Add Gym" },
+      { to: "/owner/bookings", label: "Bookings" },
+    ];
+  return [
+    { to: "/gyms", label: "Browse Gyms" },
+    { to: "/user/bookings", label: "My Bookings" },
+    { to: "/user/profile", label: "Profile" },
+  ];
+};
+
 const LandingNavbar = () => {
-  const { user, role } = useAuth();
-  const dashHref = role === "owner" ? "/owner/dashboard" : "/user/dashboard";
+  const { user, role, signOut } = useAuth();
+  const navigate = useNavigate();
   const [hidden, setHidden] = useState(false);
   const [lastY, setLastY] = useState(0);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => {
@@ -19,6 +39,14 @@ const LandingNavbar = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, [lastY]);
 
+  const handleLogout = async () => {
+    setOpen(false);
+    await signOut();
+    navigate("/");
+  };
+
+  const items = navItemsForRole(!!user, role);
+
   return (
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-transform duration-300 ${hidden ? "-translate-y-full" : "translate-y-0"}`}
@@ -28,32 +56,82 @@ const LandingNavbar = () => {
           <Link to="/" className="font-display text-3xl tracking-wider text-lime">
             GYMSPOT
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
+
+          <div className="hidden md:flex items-center gap-2">
             {user ? (
-              <Link
-                to={dashHref}
-                className="rounded-full bg-lime px-5 py-2 text-sm font-semibold text-charcoal hover:opacity-90"
-              >
-                Dashboard
-              </Link>
+              <>
+                {items.map((i) => (
+                  <Link
+                    key={i.to}
+                    to={i.to}
+                    className="rounded-full px-4 py-2 text-sm font-semibold text-foreground/80 hover:bg-white/5 hover:text-foreground"
+                  >
+                    {i.label}
+                  </Link>
+                ))}
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-400/10"
+                >
+                  <LogOut className="h-4 w-4" /> Logout
+                </button>
+              </>
             ) : (
               <>
-                <Link
-                  to="/auth/login"
-                  className="rounded-full px-5 py-2 text-sm font-semibold text-foreground/80 hover:text-foreground"
-                >
+                <Link to="/auth/login" className="rounded-full px-5 py-2 text-sm font-semibold text-foreground/80 hover:text-foreground">
                   Login
                 </Link>
-                <Link
-                  to="/auth/signup"
-                  className="rounded-full bg-lime px-5 py-2 text-sm font-semibold text-charcoal hover:opacity-90"
-                >
+                <Link to="/auth/signup" className="rounded-full bg-lime px-5 py-2 text-sm font-semibold text-charcoal hover:opacity-90">
                   Get Started
                 </Link>
               </>
             )}
           </div>
+
+          <button
+            aria-label="Toggle menu"
+            onClick={() => setOpen((v) => !v)}
+            className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-foreground"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </nav>
+
+        {open && (
+          <div className="md:hidden border-t border-white/10 bg-[#0a0a0a]/95 backdrop-blur-md">
+            <div className="container flex flex-col gap-1 py-4">
+              {user ? (
+                <>
+                  {items.map((i) => (
+                    <Link
+                      key={i.to}
+                      to={i.to}
+                      onClick={() => setOpen(false)}
+                      className="rounded-lg px-4 py-3 text-base font-semibold text-foreground/90 hover:bg-white/5"
+                    >
+                      {i.label}
+                    </Link>
+                  ))}
+                  <button
+                    onClick={handleLogout}
+                    className="mt-1 inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-3 text-base font-semibold text-red-400 hover:bg-red-400/10"
+                  >
+                    <LogOut className="h-4 w-4" /> Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth/login" onClick={() => setOpen(false)} className="rounded-lg px-4 py-3 text-base font-semibold text-foreground/90 hover:bg-white/5">
+                    Login
+                  </Link>
+                  <Link to="/auth/signup" onClick={() => setOpen(false)} className="rounded-lg bg-lime px-4 py-3 text-center text-base font-semibold text-charcoal hover:opacity-90">
+                    Get Started
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
