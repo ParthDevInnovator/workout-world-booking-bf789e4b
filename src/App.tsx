@@ -10,6 +10,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import Gyms from "./pages/Gyms";
 import GymDetail from "./pages/GymDetail";
 import UserDashboard from "./pages/user/Dashboard";
