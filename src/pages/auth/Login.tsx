@@ -52,6 +52,11 @@ const Login = () => {
         <FloatingInput id="email" type="email" label="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <FloatingInput id="pw" type="password" label="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <AuthSubmit type="submit" loading={loading}>LOGIN</AuthSubmit>
+        <div className="flex justify-end">
+          <Link to="/auth/forgot-password" className="text-sm text-[#888] transition hover:text-[#c8f04b]">
+            Forgot Password?
+          </Link>
+        </div>
       </form>
 
       <p className="mt-8 text-center text-sm text-[#888]">
