@@ -14,16 +14,28 @@ const ResetPassword = () => {
   const [matchError, setMatchError] = useState(false);
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (!hash.includes("type=recovery")) {
-      return;
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
+    const type = hashParams.get("type");
+
+    if (type === "recovery" && accessToken) {
+      supabase.auth
+        .setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || "",
+        })
+        .then(({ error }) => {
+          if (error) {
+            toast.error("Invalid or expired reset link");
+            navigate("/auth/forgot-password");
+          }
+        });
+    } else {
+      toast.error("Invalid reset link. Try again.");
+      navigate("/auth/forgot-password");
     }
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        // session is set, allow password update
-      }
-    });
-  }, []);
+  }, [navigate]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
