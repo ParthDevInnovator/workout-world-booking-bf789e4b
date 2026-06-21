@@ -26,7 +26,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(s?.user ?? null);
       if (s?.user) {
         setTimeout(async () => {
-          const { data } = await supabase.from("user_roles").select("role").eq("user_id", s.user.id).maybeSingle();
+          const { data } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", s.user.id)
+            .maybeSingle();
           setRole((data?.role as AppRole) ?? "user");
         }, 0);
       } else {
@@ -38,7 +42,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        const { data } = await supabase.from("user_roles").select("role").eq("user_id", s.user.id).maybeSingle();
+        const { data } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", s.user.id)
+          .maybeSingle();
         setRole((data?.role as AppRole) ?? "user");
       }
       setLoading(false);
@@ -47,9 +55,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const signOut = async () => { 
+    await supabase.auth.signOut(); 
+  };
 
-  return <Ctx.Provider value={{ user, session, role, loading, signOut }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ user, session, role, loading, signOut }}>
+      {children}
+    </Ctx.Provider>
+  );
 };
 
 export const useAuth = () => useContext(Ctx);
